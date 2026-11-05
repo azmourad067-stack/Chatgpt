@@ -43,7 +43,7 @@ def populate(repo: Repository, days: int = 30, races_per_day: int = 6, runners: 
             # ordre d'arrivée Plackett-Luce (Gumbel)
             order = np.argsort(-(strength + rng.gumbel(size=runners)))
             final = with_results_last_day or d < days - 1
-            observed = start + timedelta(hours=1) if final else start - timedelta(minutes=20)
+            observed = start - timedelta(minutes=20)
             snap = RaceSnapshot(race, observed)
             for i, h in enumerate(horses):
                 recent = np.clip(np.round(4.5 - 1.5 * ability[h] + rng.normal(0, 2, 6)), 1, 9)
