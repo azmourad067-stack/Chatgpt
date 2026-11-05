@@ -9,3 +9,4 @@ sqlalchemy
 pyyaml
 joblib
 pyarrow
+pydantic>=2.0
