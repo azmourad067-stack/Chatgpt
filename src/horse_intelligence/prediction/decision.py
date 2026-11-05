@@ -1,15 +1,5 @@
-"""Décision SIMPLE_GAGNANT avec abstention conservatrice.
 
-Le moteur n'autorise un pari que si :
-- les données sont vérifiées ;
-- le modèle est actif et hors échantillon ;
-- l'incertitude est exploitable ;
-- les probabilités sont valides et normalisées ;
-- la borne basse de probabilité dépasse suffisamment le marché ;
-- l'espérance théorique conservatrice dépasse le seuil minimal.
-
-Aucune rentabilité n'est garantie.
-"""
+"""Décision SIMPLE_GAGNANT avec abstention conservatrice."""
 
 from __future__ import annotations
 
@@ -55,7 +45,6 @@ def decide_simple_gagnant(
     uncertainty: str,
     config: DecisionConfig | None = None,
 ) -> DecisionResult:
-    """Retourne une décision unique pour une course."""
 
     cfg = config or DecisionConfig()
 
@@ -132,15 +121,13 @@ def decide_simple_gagnant(
             "Les probabilités, bornes ou cotes sont incohérentes.",
         )
 
-    tolerance = cfg.probability_sum_tolerance
-
-    if abs(float(p.sum()) - 1.0) > tolerance:
+    if abs(float(p.sum()) - 1.0) > cfg.probability_sum_tolerance:
         return DecisionResult(
             "INSUFFICIENT_DATA", None,
             "Les probabilités du modèle ne sont pas normalisées.",
         )
 
-    if abs(float(market.sum()) - 1.0) > tolerance:
+    if abs(float(market.sum()) - 1.0) > cfg.probability_sum_tolerance:
         return DecisionResult(
             "INSUFFICIENT_DATA", None,
             "Les probabilités du marché ne sont pas normalisées.",
@@ -149,7 +136,6 @@ def decide_simple_gagnant(
     edge = low - market
     ev = low * prices - 1.0
 
-    # Le candidat doit satisfaire les deux critères conservateurs.
     eligible = (
         (edge >= cfg.min_edge)
         & (ev >= cfg.min_expected_value)
@@ -162,8 +148,6 @@ def decide_simple_gagnant(
         )
 
     candidates = np.where(eligible)[0]
-
-    # Sélection du meilleur EV conservateur, sans utiliser le résultat futur.
     best = int(candidates[np.argmax(ev[candidates])])
 
     return DecisionResult(
