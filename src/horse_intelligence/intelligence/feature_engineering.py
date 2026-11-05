@@ -111,7 +111,7 @@ def load_raw(engine: Engine, until: date | None = None) -> dict[str, pd.DataFram
 
 
 def _entries_at_decision(entries: pd.DataFrame, races: pd.DataFrame) -> pd.DataFrame:
-    """Version de def _entries_at_decision(entries: pd.DataFrame, races: pd.DataFrame) -> pd.DataFrame:
+        """Ne conserve que la dernière version connue à l'instant de décision.
     """Ne conserve que la dernière version connue à l'instant de décision.
 
     Règle PIT stricte :
