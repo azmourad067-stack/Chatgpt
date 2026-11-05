@@ -111,24 +111,38 @@ def load_raw(engine: Engine, until: date | None = None) -> dict[str, pd.DataFram
 
 
 def _entries_at_decision(entries: pd.DataFrame, races: pd.DataFrame) -> pd.DataFrame:
-    """Version de chaque engagement connue à l'instant de décision.
+    """Version de def _entries_at_decision(entries: pd.DataFrame, races: pd.DataFrame) -> pd.DataFrame:
+    """Ne conserve que la dernière version connue à l'instant de décision.
 
-    Si aucune version n'a été observée avant la décision (collecte a posteriori),
-    la plus ancienne observation est retenue : les champs déclaratifs ne dépendent pas
-    de l'issue de la course (vérifié par l'audit de fuite).
+    Règle PIT stricte :
+    - observed_at doit être inférieur ou égal à decision_time ;
+    - aucune observation future ne peut servir de remplacement ;
+    - si aucun engagement n'est connu au cutoff, il est absent du dataset.
     """
-    e = entries.merge(races[["race_id", "decision_time"]], on="race_id")
-    e = e.sort_values("observed_at")
-    before = e[e["observed_at"] <= e["decision_time"]]
-    latest_before = before.drop_duplicates(["race_id", "num_pmu"], keep="last")
-    earliest = e.drop_duplicates(["race_id", "num_pmu"], keep="first")
-    missing = earliest.merge(latest_before[["race_id", "num_pmu"]], how="left",
-                             on=["race_id", "num_pmu"], indicator=True)
-    missing = missing[missing["_merge"] == "left_only"].drop(columns="_merge")
-    out = pd.concat([latest_before, missing], ignore_index=True)
-    out["entry_seen_before_decision"] = out["observed_at"] <= out["decision_time"]
-    return out
+    e = entries.merge(
+        races[["race_id", "decision_time"]],
+        on="race_id",
+        how="inner",
+    )
 
+    e = e[
+        e["observed_at"].notna()
+        & (e["observed_at"] <= e["decision_time"])
+    ].copy()
+
+    e = e.sort_values(
+        ["race_id", "num_pmu", "observed_at"],
+        kind="stable",
+    )
+
+    out = e.drop_duplicates(
+        ["race_id", "num_pmu"],
+        keep="last",
+    ).copy()
+
+    out["entry_seen_before_decision"] = True
+
+    return out
 
 def _market(odds: pd.DataFrame, races: pd.DataFrame, runners: pd.DataFrame) -> pd.DataFrame:
     """Probabilités implicites des cotes de référence disponibles à la décision.
